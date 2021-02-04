@@ -1,0 +1,34 @@
+FROM rust:latest
+
+# This article was a great help in getting this setup.
+# https://wapl.es/rust/2019/02/17/rust-cross-compile-linux-to-macos.html
+
+RUN apt update && apt install -y \
+    git \
+    clang \
+    cmake
+
+WORKDIR /build
+
+RUN git clone https://github.com/tpoechtrager/osxcross && \
+cd /build/osxcross/tarballs && \
+wget --no-verbose https://s3.dockerproject.org/darwin/v2/MacOSX10.10.sdk.tar.xz && \
+cd /build/osxcross && \
+UNATTENDED=yes OSX_VERSION_MIN=10.7 ./build.sh
+
+ENV PATH="/build/osxcross/target/bin:${PATH}"
+
+RUN rustup target add x86_64-apple-darwin
+
+# Build a dummy, just to load dependencies
+COPY .cargo .cargo
+COPY Cargo.toml .
+COPY Cargo.lock .
+RUN mkdir ./src && echo 'fn main() {}' > src/main.rs
+RUN cargo build --target x86_64-apple-darwin --release
+
+# now build the whole thing for realz
+COPY ./src ./src
+RUN cargo build --target x86_64-apple-darwin --release
+RUN ls -l target/x86_64-apple-darwin/release/rusty-pancake
+

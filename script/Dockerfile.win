@@ -1,0 +1,19 @@
+FROM rust:latest
+
+RUN apt update && apt install -y mingw-w64
+
+WORKDIR /build
+
+RUN rustup target add x86_64-pc-windows-gnu
+
+# Build a dummy, just to load dependencies
+COPY .cargo .cargo
+COPY Cargo.toml .
+COPY Cargo.lock .
+RUN mkdir ./src && echo 'fn main() {}' > src/main.rs
+RUN cargo build --target=x86_64-pc-windows-gnu --release
+
+# now build the whole thing for realz
+COPY ./src ./src
+RUN cargo build --target=x86_64-pc-windows-gnu --release
+

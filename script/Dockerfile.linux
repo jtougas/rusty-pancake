@@ -1,0 +1,15 @@
+FROM rust:latest
+
+WORKDIR /build
+
+# Build a dummy, just to load dependencies
+COPY .cargo .cargo
+COPY Cargo.toml .
+COPY Cargo.lock .
+RUN mkdir ./src && echo 'fn main() {}' > src/main.rs
+RUN cargo build --release
+
+# now build the whole thing for realz
+COPY ./src ./src
+RUN cargo build --release
+
